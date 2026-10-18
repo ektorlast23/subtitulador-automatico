@@ -59,6 +59,12 @@ Con `--burn` se quema el SRT traducido en el video con ffmpeg.
 
 ## Uso de la web
 
+En Windows, doble clic en **`iniciar_web.bat`**: configura el entorno, abre el
+navegador y arranca el servidor (usa `.venv` si existe, si no `H:\subtitulador-venv`,
+si no el `python` del PATH).
+
+O manualmente:
+
 ```powershell
 uvicorn subtitulador.web:app --reload
 ```
