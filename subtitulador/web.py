@@ -88,15 +88,22 @@ def create_app(asr_backend: str = "mock", translator: str = "passthrough") -> Fa
         input_path.write_bytes(data)
 
         audio_path = work_dir / "audio.wav"
-        result = run(
-            input_path,
-            source="en",
-            target=target,
-            asr_backend=asr_backend,
-            translator=translator,
-            out_dir=work_dir,
-            audio_path=audio_path,
-        )
+        try:
+            result = run(
+                input_path,
+                source="en",
+                target=target,
+                asr_backend=asr_backend,
+                translator=translator,
+                out_dir=work_dir,
+                audio_path=audio_path,
+            )
+        except Exception as exc:
+            lines = [ln.strip() for ln in str(exc).splitlines() if ln.strip()]
+            detail = " | ".join(lines[-3:])[:500] if lines else str(exc)
+            raise HTTPException(
+                status_code=500, detail=f"Fallo al procesar el archivo: {detail}"
+            ) from exc
 
         jobs[job_id] = {
             "job_id": job_id,

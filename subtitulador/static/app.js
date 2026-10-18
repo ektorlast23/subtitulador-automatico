@@ -39,7 +39,14 @@ form.addEventListener("submit", async (event) => {
   try {
     const response = await fetch("/api/transcribe", { method: "POST", body: data });
     if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}`);
+      let detail = `Error HTTP ${response.status}`;
+      try {
+        const errBody = await response.json();
+        if (errBody && errBody.detail) detail = errBody.detail;
+      } catch (ignored) {
+        // sin cuerpo JSON; se usa el mensaje por defecto
+      }
+      throw new Error(detail);
     }
     const payload = await response.json();
     renderCues(document.getElementById("en"), payload.en);

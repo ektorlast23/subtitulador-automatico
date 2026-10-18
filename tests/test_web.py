@@ -88,3 +88,18 @@ def test_download_unknown_job():
     client = TestClient(create_app(asr_backend="mock", translator="passthrough"))
     response = client.get("/api/download/nope/srt_es")
     assert response.status_code == 404
+
+
+def test_invalid_target_returns_400(tmp_path):
+    audio = tmp_path / "input.wav"
+    _make_audio(audio)
+    data = audio.read_bytes()
+
+    client = TestClient(create_app(asr_backend="mock", translator="passthrough"))
+    response = client.post(
+        "/api/transcribe",
+        files={"file": ("input.wav", data, "audio/wav")},
+        data={"target": "fr"},
+    )
+    assert response.status_code == 400
+    assert "detail" in response.json()
