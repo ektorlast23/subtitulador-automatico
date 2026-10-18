@@ -58,32 +58,42 @@ def run(
     segments = backend.transcribe(audio_path, language=source, model_size=model_size)
     source_cues = build_cues(segments)
 
-    trans = translate_module.get_translator(translator)
-    texts = [cue.text.replace("\n", " ") for cue in source_cues]
-    translated = trans.translate(texts, source=source, target=target)
-    target_segments = [
-        Segment(cue.start, cue.end, text)
-        for cue, text in zip(source_cues, translated)
-    ]
-    target_cues = build_cues(target_segments)
+    translate = target != source
+    if translate:
+        trans = translate_module.get_translator(translator)
+        texts = [cue.text.replace("\n", " ") for cue in source_cues]
+        translated = trans.translate(texts, source=source, target=target)
+        target_segments = [
+            Segment(cue.start, cue.end, text)
+            for cue, text in zip(source_cues, translated)
+        ]
+        target_cues = build_cues(target_segments)
+    else:
+        target_cues = source_cues
 
-    srt_en = write_srt(out / f"{stem}.{source}.srt", source_cues)
-    srt_target = write_srt(out / f"{stem}.{target}.srt", target_cues)
-    vtt_target = write_vtt(out / f"{stem}.{target}.vtt", target_cues)
+    srt_source = write_srt(out / f"{stem}.{source}.srt", source_cues)
+    vtt_source = write_vtt(out / f"{stem}.{source}.vtt", source_cues)
+
+    files = {
+        "srt_source": str(srt_source),
+        "vtt_source": str(vtt_source),
+    }
+    if translate:
+        srt_target = write_srt(out / f"{stem}.{target}.srt", target_cues)
+        vtt_target = write_vtt(out / f"{stem}.{target}.vtt", target_cues)
+        files["srt_target"] = str(srt_target)
+        files["vtt_target"] = str(vtt_target)
 
     result = {
         "input": str(input_path),
         "audio": str(audio_path),
         "source": source,
         "target": target,
+        "translated": translate,
         "segments": len(segments),
         "source_cues": source_cues,
         "target_cues": target_cues,
-        "files": {
-            "srt_source": str(srt_en),
-            "srt_target": str(srt_target),
-            "vtt_target": str(vtt_target),
-        },
+        "files": files,
     }
 
     if burn:

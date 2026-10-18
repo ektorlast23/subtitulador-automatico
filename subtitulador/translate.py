@@ -96,6 +96,61 @@ class NLLBTranslator:
         return results
 
 
+class MarianTranslator:
+    name = "marian"
+
+    _MODELS = {("en", "es"): "Helsinki-NLP/opus-mt-en-es"}
+    _CACHE: dict = {}
+
+    def __init__(self, model_name: str | None = None) -> None:
+        self.model_name = model_name
+
+    def _load(self, model_name: str, device: str):
+        key = (model_name, device)
+        if key not in MarianTranslator._CACHE:
+            from transformers import MarianMTModel, MarianTokenizer
+
+            tokenizer = MarianTokenizer.from_pretrained(model_name)
+            model = MarianMTModel.from_pretrained(model_name)
+            model.to(device)
+            model.eval()
+            MarianTranslator._CACHE[key] = (tokenizer, model)
+        return MarianTranslator._CACHE[key]
+
+    def translate(
+        self, texts: list[str], source: str = "en", target: str = "es"
+    ) -> list[str]:
+        try:
+            import torch
+            from transformers import MarianMTModel, MarianTokenizer  # noqa: F401
+        except ImportError as exc:
+            raise TranslationError(
+                "transformers no esta instalado. Instala 'pip install transformers "
+                "sentencepiece'."
+            ) from exc
+
+        model_name = self.model_name or self._MODELS.get((source, target))
+        if not model_name:
+            raise TranslationError(
+                f"Par de idiomas no soportado por Marian: {source!r}->{target!r}"
+            )
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        tokenizer, model = self._load(model_name, device)
+
+        results: list[str] = []
+        batch_size = 16
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            encoded = tokenizer(
+                batch, return_tensors="pt", padding=True, truncation=True, max_length=512
+            ).to(device)
+            with torch.no_grad():
+                generated = model.generate(**encoded, max_length=512)
+            results.extend(tokenizer.batch_decode(generated, skip_special_tokens=True))
+        return results
+
+
 def _passthrough() -> PassthroughTranslator:
     return PassthroughTranslator()
 
@@ -108,10 +163,15 @@ def _nllb() -> NLLBTranslator:
     return NLLBTranslator()
 
 
+def _marian() -> MarianTranslator:
+    return MarianTranslator()
+
+
 TRANSLATORS = {
     "passthrough": _passthrough,
     "deepl": _deepl,
     "nllb": _nllb,
+    "marian": _marian,
 }
 
 

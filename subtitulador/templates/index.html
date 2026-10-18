@@ -17,9 +17,10 @@
       <label for="file">Archivo de video o audio</label>
       <input type="file" id="file" name="file" accept="video/*,audio/*" required>
 
-      <label for="lang">Idioma destino</label>
-      <select id="lang" name="lang">
-        <option value="es" selected>Espanol (es)</option>
+      <label for="direction">Direccion</label>
+      <select id="direction" name="direction">
+        <option value="es" selected>Ingles &rarr; Espanol (traducir)</option>
+        <option value="en">Ingles &rarr; Ingles (solo transcripcion)</option>
       </select>
 
       <button type="submit" id="submit">Generar subtitulos</button>
@@ -28,11 +29,11 @@
     <p id="status" class="status"></p>
 
     <section id="result" class="result hidden">
-      <div class="column">
+      <div class="column" id="col-en">
         <h2>EN (original)</h2>
         <div id="en" class="cues"></div>
       </div>
-      <div class="column">
+      <div class="column" id="col-es">
         <h2>ES (traducido)</h2>
         <div id="es" class="cues"></div>
       </div>
@@ -41,6 +42,7 @@
     <section id="downloads" class="downloads hidden">
       <h2>Descargas</h2>
       <a id="dl-srt-en" href="#">SRT EN</a>
+      <a id="dl-vtt-en" href="#">VTT EN</a>
       <a id="dl-srt-es" href="#">SRT ES</a>
       <a id="dl-vtt-es" href="#">VTT ES</a>
     </section>

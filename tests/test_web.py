@@ -59,6 +59,31 @@ def test_transcribe_and_download(tmp_path):
     assert "-->" in download.text
 
 
+def test_direction_en_only(tmp_path):
+    audio = tmp_path / "input.wav"
+    _make_audio(audio)
+    data = audio.read_bytes()
+
+    client = TestClient(create_app(asr_backend="mock", translator="passthrough"))
+    response = client.post(
+        "/api/transcribe",
+        files={"file": ("input.wav", data, "audio/wav")},
+        data={"target": "en"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["translated"] is False
+    assert len(payload["en"]) > 0
+    assert payload["es"] == []
+    assert "srt_en" in payload["downloads"]
+    assert "vtt_en" in payload["downloads"]
+    assert "srt_es" not in payload["downloads"]
+
+    job_id = payload["job_id"]
+    assert client.get(payload["downloads"]["vtt_en"]).status_code == 200
+    assert client.get(f"/api/download/{job_id}/srt_es").status_code == 404
+
+
 def test_download_unknown_job():
     client = TestClient(create_app(asr_backend="mock", translator="passthrough"))
     response = client.get("/api/download/nope/srt_es")

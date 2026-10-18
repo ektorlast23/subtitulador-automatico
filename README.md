@@ -16,7 +16,8 @@ faster-whisper y traduccion con NLLB) se importan de forma **perezosa** y son
    produce `Segment(start, end, text)`.
 3. **Segmentado** (`segment.py`): agrupa y parte los segmentos en `Cue` con
    maximo de caracteres por linea, maximo de lineas, tiempos y fusion por huecos.
-4. **Traduccion** (`translate.py`): `PassthroughTranslator`, `DeepLTranslator`
+4. **Traduccion** (`translate.py`): `PassthroughTranslator`, `MarianTranslator`
+   (Helsinki-NLP/opus-mt-en-es, transformers/torch, lazy), `DeepLTranslator`
    (httpx + `DEEPL_API_KEY`) o `NLLBTranslator` (transformers/torch, lazy).
 5. **Salida** (`subtitle.py`): SRT (`HH:MM:SS,mmm`) y VTT (`WEBVTT` + `HH:MM:SS.mmm`).
 
@@ -30,21 +31,29 @@ pip install -r requirements.txt
 
 Requiere `ffmpeg` y `ffprobe` en el PATH.
 
+## Direcciones
+
+La app soporta dos direcciones (se eligen en la web o con `--target` en la CLI):
+
+- **Ingles -> Ingles** (`--target en`): solo transcripcion, sin traducir. Genera
+  `<stem>.en.srt` y `<stem>.en.vtt`.
+- **Ingles -> Espanol** (`--target es`, por defecto): traduce de verdad. Genera
+  `<stem>.en.srt`, `<stem>.en.vtt`, `<stem>.es.srt` y `<stem>.es.vtt`.
+
 ## Uso de la CLI
 
 ```powershell
-python -m subtitulador video.mp4 --asr mock --translator passthrough --out out
+# Ingles -> Ingles (solo transcripcion)
+python -m subtitulador video.mp4 --asr whisper --target en --out out
+
+# Ingles -> Espanol (traduccion real con MarianMT)
+python -m subtitulador video.mp4 --asr whisper --translator marian --target es --out out
+
 python -m subtitulador --help
 ```
 
 Opciones: `--source`, `--target`, `--asr whisper|mock`,
-`--translator nllb|deepl|passthrough`, `--model-size`, `--out`, `--burn`.
-
-Genera en `out/`:
-
-- `<stem>.<source>.srt` (transcripcion original)
-- `<stem>.<target>.srt` (traducida)
-- `<stem>.<target>.vtt` (traducida)
+`--translator marian|nllb|deepl|passthrough`, `--model-size`, `--out`, `--burn`.
 
 Con `--burn` se quema el SRT traducido en el video con ffmpeg.
 
@@ -54,8 +63,21 @@ Con `--burn` se quema el SRT traducido en el video con ffmpeg.
 uvicorn subtitulador.web:app --reload
 ```
 
-Abre http://127.0.0.1:8000 , sube un archivo, pulsa "Generar subtitulos" y
-descarga los SRT/VTT. Endpoints:
+Abre http://127.0.0.1:8000 , sube un archivo, elige la **Direccion**
+(Ingles->Ingles o Ingles->Espanol), pulsa "Generar subtitulos" y descarga los
+SRT/VTT disponibles.
+
+El backend ASR y el traductor se eligen con variables de entorno:
+`SUBTITULADOR_ASR` (`whisper`|`mock`, por defecto `mock`) y
+`SUBTITULADOR_TRANSLATOR` (`marian`|`nllb`|`deepl`|`passthrough`, por defecto
+`passthrough`). Ejemplo en PowerShell:
+
+```powershell
+$env:SUBTITULADOR_ASR="whisper"; $env:SUBTITULADOR_TRANSLATOR="marian"
+uvicorn subtitulador.web:app
+```
+
+Endpoints:
 
 - `GET /` interfaz
 - `POST /api/transcribe` (multipart, campo `file`)
@@ -70,7 +92,12 @@ Verificado en **GTX 1050 (Pascal, sm_61) + Python 3.14 + CUDA 12.6**:
 ```powershell
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 pip install faster-whisper
+pip install transformers sentencepiece sacremoses
 ```
+
+`transformers` es opcional: se importa de forma perezosa y solo hace falta para
+`--translator marian|nllb`. El modelo de traduccion (`Helsinki-NLP/opus-mt-en-es`,
+~300 MB) se descarga la primera vez y se cachea en `HF_HOME`.
 
 Luego usa `--asr whisper --translator nllb` (o `passthrough` sin motor de
 traduccion).

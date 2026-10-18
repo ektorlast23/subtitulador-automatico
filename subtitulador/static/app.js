@@ -25,8 +25,11 @@ form.addEventListener("submit", async (event) => {
   const fileInput = document.getElementById("file");
   if (!fileInput.files.length) return;
 
+  const target = document.getElementById("direction").value;
+
   const data = new FormData();
   data.append("file", fileInput.files[0]);
+  data.append("target", target);
 
   submitBtn.disabled = true;
   statusEl.textContent = "Procesando... esto puede tardar.";
@@ -40,11 +43,26 @@ form.addEventListener("submit", async (event) => {
     }
     const payload = await response.json();
     renderCues(document.getElementById("en"), payload.en);
-    renderCues(document.getElementById("es"), payload.es);
 
-    document.getElementById("dl-srt-en").href = payload.downloads.srt_en;
-    document.getElementById("dl-srt-es").href = payload.downloads.srt_es;
-    document.getElementById("dl-vtt-es").href = payload.downloads.vtt_es;
+    const translated = Boolean(payload.translated);
+    document.getElementById("col-es").classList.toggle("hidden", !translated);
+    if (translated) {
+      renderCues(document.getElementById("es"), payload.es);
+    }
+
+    const downloads = payload.downloads || {};
+    const links = {
+      "dl-srt-en": "srt_en",
+      "dl-vtt-en": "vtt_en",
+      "dl-srt-es": "srt_es",
+      "dl-vtt-es": "vtt_es",
+    };
+    Object.entries(links).forEach(([id, kind]) => {
+      const el = document.getElementById(id);
+      const href = downloads[kind];
+      el.href = href || "#";
+      el.classList.toggle("hidden", !href);
+    });
 
     resultEl.classList.remove("hidden");
     downloadsEl.classList.remove("hidden");
