@@ -1,0 +1,8 @@
+# Dependencias GPU: NO incluidas en el core. Instalar manualmente.
+# Torch con CUDA (ajusta el indice segun tu version de CUDA; ejemplo cu126,
+# verificado en GTX 1050 / Python 3.14):
+#   pip install torch --index-url https://download.pytorch.org/whl/cu126
+faster-whisper
+transformers
+sentencepiece
+torch

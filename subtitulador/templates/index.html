@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subtitulador automatico EN->ES</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Subtitulador automatico EN&rarr;ES</h1>
+    <p>Sube un video, transcribe en ingles y traduce al espanol.</p>
+  </header>
+
+  <main>
+    <form id="form">
+      <label for="file">Archivo de video o audio</label>
+      <input type="file" id="file" name="file" accept="video/*,audio/*" required>
+
+      <label for="lang">Idioma destino</label>
+      <select id="lang" name="lang">
+        <option value="es" selected>Espanol (es)</option>
+      </select>
+
+      <button type="submit" id="submit">Generar subtitulos</button>
+    </form>
+
+    <p id="status" class="status"></p>
+
+    <section id="result" class="result hidden">
+      <div class="column">
+        <h2>EN (original)</h2>
+        <div id="en" class="cues"></div>
+      </div>
+      <div class="column">
+        <h2>ES (traducido)</h2>
+        <div id="es" class="cues"></div>
+      </div>
+    </section>
+
+    <section id="downloads" class="downloads hidden">
+      <h2>Descargas</h2>
+      <a id="dl-srt-en" href="#">SRT EN</a>
+      <a id="dl-srt-es" href="#">SRT ES</a>
+      <a id="dl-vtt-es" href="#">VTT ES</a>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
